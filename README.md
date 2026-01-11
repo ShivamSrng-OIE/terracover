@@ -2,6 +2,8 @@
 
 A professional tool for semantic segmentation and area measurement of satellite imagery. Calculates exact area (in Hectares) of **Water, Trees, Human Habitat, Roads,** and **Grass** using **Deep Learning (U-Net)** combined with **Physics-Based Color and Texture Analysis**.
 
+![Sample Analysis Result](assets/sample_result.png)
+
 ---
 
 ## Features
