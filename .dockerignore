@@ -1,0 +1,9 @@
+outputs/
+data/downloads/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+venv/
+.env
+.DS_Store

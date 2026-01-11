@@ -1,0 +1,117 @@
+# ==========================================
+# SATELLITE LAND COVER ANALYSIS CONFIGURATION
+# ==========================================
+
+# -----------------------------------------------------------------------------
+# 1. CLASSES & COLORS
+# Define the land cover types, their IDs, and visualization colors.
+# -----------------------------------------------------------------------------
+landcover_classes:
+  Background:
+    id: 0
+    color: [200, 200, 200]
+    hex: "#C8C8C8"
+  Water:
+    id: 1
+    color: [0, 100, 255] # Bright Blue
+    hex: "#0064FF"
+  Trees_Woodland:
+    id: 2
+    color: [34, 139, 34] # Forest Green
+    hex: "#228B22"
+  Grass_Parks:
+    id: 3
+    color: [144, 238, 144] # Light Green
+    hex: "#90EE90"
+  Human_Habitat:
+    id: 4
+    color: [255, 0, 0] # Red
+    hex: "#FF0000"
+  Roads_Paths:
+    id: 5
+    color: [128, 128, 128] # Grey
+    hex: "#808080"
+
+# -----------------------------------------------------------------------------
+# 2. MODEL ENSEMBLING
+# How we combine Deep Learning (U-Net) with Color Physics.
+# -----------------------------------------------------------------------------
+ensemble_weights:
+  deep_learning: 0.60 # Balanced approach
+  color_physics: 0.40 # Trees need strong color signals (Green)
+
+# -----------------------------------------------------------------------------
+# 3. COLOR PHYSICS PARAMETERS
+# These control the "Physics" analysis. Tweak these if specific objects are failed.
+# -----------------------------------------------------------------------------
+physics:
+  water:
+    hue_center: 110 # Blue hue center
+    hue_width: 12 # Width of the hue bell curve (lower = stricter blue)
+    min_saturation: 0.40 # Water must be at least this saturated (0.0-1.0)
+    max_brightness: 0.75 # Penalize if brighter than this (removes bright roofs)
+    # Texture Penalty: How strict we are about water being smooth.
+    # 0.0 = No penalty for rough texture. 1.0 = Strict penalty.
+    texture_strictness: 1.0
+
+  trees:
+    hue_center: 60 # Green hue center
+    hue_width: 25 # Broad range for various vegetation types
+    min_saturation: 0.25 # Vegetation usually has some color
+
+  human_habitat:
+    red_brick_center1: 10 # Red/Orange bricks
+    red_brick_center2: 170 # Red/Purple bricks
+    hue_width: 15
+    # LOGIC UPDATE: Soil/Land is also Red/Orange but SMOOTH. Habitat is ROUGH.
+    min_texture: 0.35 # Minimum texture to be considered a structure.
+
+  roads:
+    max_saturation: 0.2 # Roads are usually grey (low saturation)
+    val_center: 0.5 # Medium brightness (asphalt)
+    val_width: 0.25
+
+# -----------------------------------------------------------------------------
+# 4. POST-PROCESSING THRESHOLDS
+# Rules applied after probabilities are calculated to fix common errors.
+# -----------------------------------------------------------------------------
+post_processing:
+  water_confidence_threshold: 0.30
+  # If the model is less than 30% confident a pixel is water, it gets reclassified.
+  # Increasing this removes shadows but might lose deep/dark water.
+  # Decreasing this catches more water but adds building shadows.
+  # Geometric Filtering:
+  # "Dark Water" looks like Shadow. But Water is BIG, Shadows are SMALL.
+  # We force-keep any water blob larger than this (in pixels), even if confidence is low.
+  min_water_blob_size: 2000
+
+  # Global "Unknown" Threshold:
+  # If the model isn't confident about ANY class, classify it as "Background" (Other).
+  # Useful for mountains, snow, or objects not in our training set.
+  global_unknown_threshold: 0.20
+
+# -----------------------------------------------------------------------------
+# 6. SATELLITE IMAGERY API
+# Configuration for fetching new images via --lat --lon
+# -----------------------------------------------------------------------------
+api:
+  # Provider: "google" (Requires Key) or "esri" (Free, XYZ Tiles)
+  provider: "esri"
+
+  # Google Static Maps API (Only needed if provider is "google")
+  # Get a free API key from: https://developers.google.com/maps/documentation/maps-static/get-api-key
+  google_maps_key: "YOUR_API_KEY_HERE"
+
+  # Default image size to fetch (Max 640x640 for free tier, larger requires premium)
+  image_size: 640
+
+# -----------------------------------------------------------------------------
+# 5. SCALE SETTINGS
+# Defaults if no real-world width is provided.
+# -----------------------------------------------------------------------------
+scale:
+  default_zoom_level: 16
+  # Estimated meters per pixel at Zoom 16 for NYC Latitude (40.7 deg)
+  # Change this if analyzing images from equator or poles.
+  # Eq: 156543.03 * cos(lat) / 2^zoom
+  default_mpp: 2.39
